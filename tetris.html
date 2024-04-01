@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        body {
+            margin: 0;
+            text-align: center;
+        }
+
+        .wrapper {
+            display: flex;
+            justify-content: center;
+        }
+
+        .play-board {
+            margin-top: 100px;
+            border: 3px solid black;
+        }
+
+        .play-board>div>div {
+            border: 1px solid white;
+        }
+
+        .board {
+            margin-top: 100px;
+            margin-left: 50px;
+            width: 200px;
+            height: 400px;
+            text-align: left;
+        }
+
+        .rows {
+            display: flex;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrapper">
+        <div class="play-board" id="playBoard"></div>
+        <div class="board">
+            <p>테 트 리 스</p>
+            <button id="start" onclick="play()">게임시작</button>
+            <p>LEVEL : <span id="level">0</span></p>
+            <p>SCORE : <span id="score">0</span></p>
+        </div>
+    </div>
+    <script>
+        const rows = 20;
+        const cols = 10;
+        const blockSize = 20;
+        const playBoard = document.getElementById("playBoard");
+
+        // 보드판 만들기
+        for (let i = 0; i < 20; i++) {
+            let r = document.createElement("div");
+            r.classList.add('rows');
+            r.classList.add('rows' + i);
+            for (let j = 0; j < 10; j++) {
+                let c = document.createElement("div");
+                c.classList.add('row' + i);
+                c.classList.add('col' + j);
+                c.style.width = blockSize + 'px';
+                c.style.height = blockSize + 'px';
+                r.append(c);
+            }
+            playBoard.append(r);
+        }
+        // 게임시작
+        function play() {
+            createBlock();
+            setInterval(downBlock, 1000);
+        }
+        // 블록만들기
+        function createBlock() {
+            const shapes = [
+                [[1, 1], [1, 1]], // ㅁ
+                [[1, 1, 1, 1]], // I
+                [[1, 1, 1], [0, 1, 0]], // ㅗ
+                [[1, 1, 0], [0, 1, 1]], // Z
+                [[0, 1, 1], [1, 1, 0]], // S
+                [[1, 1, 1], [0, 0, 1]], // L
+                [[1, 1, 1], [1, 0, 0]] // J
+            ];
+            const colors = ["red", "orange", "yellow", "green", "blue", "navy", "purple"]
+            const random = Math.floor(Math.random() * shapes.length);
+            const shape = shapes[random];
+            const color = colors[random];
+
+            currentBlock = {
+                shape: shape,
+                color: color,
+                x: 4,
+                y: 0
+            };
+            drawBlock();
+        };
+        // 블록그리기
+        function drawBlock() {
+            const currentShape = currentBlock.shape;
+            const currentColor = currentBlock.color;
+            const startX = currentBlock.x;
+            const startY = currentBlock.y;
+
+            for (let x = 0; x < currentShape.length; x++) {
+                for (let y = 0; y < currentShape[x].length; y++) {
+                    if (currentShape[x][y] == 1) {
+                        const cell = document.querySelector('.row' + (startY + y) + '.col' + (startX + x));
+                        cell.classList.add("block");
+                        cell.style.backgroundColor = currentColor;
+                    }
+                }
+            }
+        }
+        // 시간이 지나면 블록내리기
+        function downBlock() {
+            let nowBlock = document.querySelectorAll(".block");
+            const currentColor = currentBlock.color;
+            // 기존 블록 지우기
+            nowBlock.forEach(block => {
+                block.classList.remove("block");
+                block.style.backgroundColor = "";
+            });
+            nowBlock.forEach(block => {
+                let row = parseInt(block.classList[0].replace("row", ""));
+                let col = parseInt(block.classList[1].replace("col", ""));
+                let nextBlock = document.querySelector(".row" + (row + 1) + ".col" + col);
+                nextBlock.classList.add("block");
+                nextBlock.style.backgroundColor = currentColor;
+            });
+        }
+        // 좌, 우, 밑으로 움직이기
+        window.addEventListener("keydown", (e) => {
+            const nowBlock = document.querySelectorAll(".block");
+            const currentColor = currentBlock.color;
+            
+            let direction = { ArrowLeft: -1, ArrowRight: 1, ArrowDown: 0 }[e.key];
+            console.log(direction);
+            if (direction !== undefined) {
+                // 기존 블록 지우기
+                nowBlock.forEach(block => {
+                    block.classList.remove("block");
+                    block.style.backgroundColor = "";
+                });
+                nowBlock.forEach(block => {
+                    let row = parseInt(block.classList[0].replace("row", ""));
+                    let col = parseInt(block.classList[1].replace("col", ""));
+                    let nextBlock = document.querySelector(".row" + row + ".col" + (col + direction));
+                    nextBlock.classList.add("block");
+                    nextBlock.style.backgroundColor = currentColor;
+                });
+            }
+        });
+    </script>
+</body>
+</html>
