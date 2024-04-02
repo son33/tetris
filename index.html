@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -120,41 +121,95 @@
         function downBlock() {
             let nowBlock = document.querySelectorAll(".block");
             const currentColor = currentBlock.color;
-            // 기존 블록 지우기
-            nowBlock.forEach(block => {
-                block.classList.remove("block");
-                block.style.backgroundColor = "";
-            });
-            nowBlock.forEach(block => {
-                let row = parseInt(block.classList[0].replace("row", ""));
-                let col = parseInt(block.classList[1].replace("col", ""));
-                let nextBlock = document.querySelector(".row" + (row + 1) + ".col" + col);
-                nextBlock.classList.add("block");
-                nextBlock.style.backgroundColor = currentColor;
-            });
-        }
-        // 좌, 우, 밑으로 움직이기
-        window.addEventListener("keydown", (e) => {
-            const nowBlock = document.querySelectorAll(".block");
-            const currentColor = currentBlock.color;
-            
-            let direction = { ArrowLeft: -1, ArrowRight: 1, ArrowDown: 0 }[e.key];
-            console.log(direction);
-            if (direction !== undefined) {
+            if (collisionBlock(nowBlock, 0)) {
+                return createBlock();
+            } else {
                 // 기존 블록 지우기
                 nowBlock.forEach(block => {
                     block.classList.remove("block");
                     block.style.backgroundColor = "";
                 });
+                // 블록 새로 그리기
                 nowBlock.forEach(block => {
                     let row = parseInt(block.classList[0].replace("row", ""));
                     let col = parseInt(block.classList[1].replace("col", ""));
-                    let nextBlock = document.querySelector(".row" + row + ".col" + (col + direction));
+                    let nextBlock = document.querySelector(".row" + (row + 1) + ".col" + col);
                     nextBlock.classList.add("block");
                     nextBlock.style.backgroundColor = currentColor;
                 });
             }
+        }
+        // 좌, 우, 밑으로 움직이기
+        window.addEventListener("keydown", (e) => {
+            const nowBlock = document.querySelectorAll(".block");
+            const currentColor = currentBlock.color;
+
+            let direction = { ArrowLeft: -1, ArrowRight: 1, ArrowDown: 0 }[e.key];
+            if (direction !== undefined) {
+                if(collisionBlock(nowBlock, direction)){
+                    if(direction == 0){
+                        return createBlock();
+                    }
+                } else {
+                    // 기존 블록 지우기
+                    nowBlock.forEach(block => {
+                        block.classList.remove("block");
+                        block.style.backgroundColor = "";
+                    });
+                    // 방향에 따라 블록 새로 그리기
+                    nowBlock.forEach(block => {
+                        let row = parseInt(block.classList[0].replace("row", ""));
+                        let col = parseInt(block.classList[1].replace("col", ""));
+                        let nextBlock = null;
+                        if (direction == 0) {
+                            nextBlock = document.querySelector(".row" + (row + 1) + ".col" + col);
+                        } else {
+                            nextBlock = document.querySelector(".row" + row + ".col" + (col + direction));
+                        }
+                        nextBlock.classList.add("block");
+                        nextBlock.style.backgroundColor = currentColor;
+                    });
+                }
+            }
         });
+        function collisionBlock(nowBlock, direction) {
+            const nextBlock = []; // 다음 위치에 있는 블록들의 위치 정보를 저장할 배열
+
+            // 다음 위치에 있는 블록들의 위치 정보를 수집
+            nowBlock.forEach(block => {
+                let row = parseInt(block.classList[0].replace("row", ""));
+                let col = parseInt(block.classList[1].replace("col", ""));
+                if (direction == 0) {
+                    nextBlock.push({ row: row + 1, col: col });
+                } else {
+                    nextBlock.push({ row: row, col: col + direction });
+                }
+            });
+
+            // 다음 위치에 다른 블록이 있는지 확인하고 충돌 감지
+            const collision = nextBlock.some(pos => {
+                // 다른 고정된 블록이나 바닥에 닿았을 경우
+                if (pos.row > 19 || pos.col < 0 || pos.col > 9 || document.querySelector(".row" + pos.row + ".col" + pos.col + ".fixed-block") !== null) {
+                    return true; // 충돌 감지
+                }
+                return false;
+            });
+
+            // 충돌이 감지되면 현재 블록을 고정시키고 새로운 블록 생성
+            if (collision) {
+                if(direction == 0){
+                    nowBlock.forEach(block => {
+                        block.classList.remove("block"); // 블록 클래스 제거
+                        block.classList.add("fixed-block"); // 고정된 블록 클래스 추가
+                    });
+                    return true;
+                } else {
+                    return true;
+                }
+            }
+            return false; // 충돌이 감지되지 않음
+        }
     </script>
 </body>
+
 </html>
