@@ -55,6 +55,12 @@
         const cols = 10;
         const blockSize = 20;
         const playBoard = document.getElementById("playBoard");
+        const scoreBoard = document.getElementById("score");
+        const levelBoard = document.getElementById("level");
+        let score = 0;
+        let level = 1;
+        let time = 2000;
+        let intervalId = setInterval(downBlock, time);
         let color = "";
         // 보드판 만들기
         for (let i = 0; i < 20; i++) {
@@ -73,8 +79,21 @@
         }
         // 게임시작
         function play() {
+            // 초기화 작업
+            score = 0;
+            level = 1;
+            time = 2000;
+            scoreBoard.innerHTML = score;
+            levelBoard.innerHTML = level;
+            // 현재 블록 삭제
+            deleteBlock(document.querySelectorAll(".block"));
+            // 고정된 블록 삭제
+            deleteBlock(document.querySelectorAll(".fixed-block"));
+            clearInterval(intervalId);
+            // 새로운 블록 생성
             createBlock();
-            setInterval(downBlock, 1000);
+            // 주기적으로 블록 내리기 시작
+            intervalId = setInterval(downBlock, time);
         }
         // 블록만들기
         function createBlock() {
@@ -96,19 +115,19 @@
         // 블록그리기
         function drawBlock(startX, startY, shape) {
             let block = [];
-            if(shape[0][0] == 0){
-                if(shape[0][1] == 0){
+            if (shape[0][0] == 0) {
+                if (shape[0][1] == 0) {
                     startX--;
-                } 
+                }
                 startX--;
             }
             for (let y = 0; y < shape.length; y++) {
                 for (let x = 0; x < shape[y].length; x++) {
                     if (shape[y][x] == 1) {
                         const cell = document.querySelector('.col' + (startX + x) + '.row' + (startY + y));
-                        if(cell){
+                        if (cell) {
                             cell.classList.add("block");
-                            if(cell.style.backgroundColor == ""){
+                            if (cell.style.backgroundColor == "") {
                                 cell.style.backgroundColor = color;
                             }
                             block.push(cell);
@@ -132,7 +151,8 @@
                 return createBlock();
             } else {
                 deleteBlock(nowBlock);
-                drawBlock(startX, startY+1, shape);
+                deleteRow(nowBlock);
+                drawBlock(startX, startY + 1, shape);
             }
         }
         // 블록을 배열로 변환
@@ -160,14 +180,14 @@
             return currentShape;
         }
         // 기존 블록 지우기
-        function deleteBlock(nowBlock){
+        function deleteBlock(nowBlock) {
             nowBlock.forEach(block => {
                 block.classList.remove("block");
-                if(!block.classList.contains("fixed-block"))
-                block.style.backgroundColor = "";
+                if (!block.classList.contains("fixed-block"))
+                    block.style.backgroundColor = "";
             });
         }
-        // 좌, 우, 밑으로 움직이기
+        // 좌, 우, 밑 그리고 스페이스바 누르기
         window.addEventListener("keydown", (e) => {
             let nowBlock = document.querySelectorAll(".block");
             let shape = blockShape(nowBlock);
@@ -176,6 +196,7 @@
                 if (collisionBlock(nowBlock, direction)) {
                     if (direction == 0) {
                         fixBlock(nowBlock);
+                        deleteRow(nowBlock);
                         return createBlock();
                     }
                     return;
@@ -192,6 +213,8 @@
                 }
             } else if (direction === "ArrowUp") {
                 rotateBlock(nowBlock);
+            } else if(e.keyCode == 32){
+                dropBlock(nowBlock);
             }
         });
         // 충돌 감지
@@ -203,7 +226,7 @@
                 let row = parseInt(block.classList[1].replace("row", ""));
                 if (direction == 0) {
                     nextBlock.push({ col: col, row: row + 1 });
-                } else if(direction == 2) {
+                } else if (direction == 2) {
                     nextBlock.push({ col: col, row: row });
                 } else {
                     nextBlock.push({ col: col + direction, row: row });
@@ -226,6 +249,7 @@
                 block.classList.add("fixed-block");
             })
         };
+        // 블록 회전
         function rotateBlock(nowBlock) {
             let startX = parseInt(nowBlock[0].classList[0].replace("col", ""));
             let startY = parseInt(nowBlock[0].classList[1].replace("row", ""));
@@ -245,18 +269,74 @@
             deleteBlock(nowBlock);
             // 회전된 블록 그리기
             let nextBlock = drawBlock(startX, startY, rotatedShape);
-            if(nextBlock == false){
+            if (nextBlock == false) {
                 deleteBlock(document.querySelectorAll(".block"));
-                if(startX < 5){
+                if (startX < 5) {
                     return rotateBlock(drawBlock(startX + 1, startY, shape));
                 } else {
                     return rotateBlock(drawBlock(startX - 1, startY, shape));
                 }
-            } else if(collisionBlock(nextBlock, 2)){
+            } else if (collisionBlock(nextBlock, 2)) {
                 deleteBlock(document.querySelectorAll(".block"));
                 return drawBlock(startX, startY, shape);
             }
         }
+        // 블록 맨 아래로 내리기
+        function dropBlock(nowBlock){
+            if(!collisionBlock(nowBlock, 0)){
+                let startX = parseInt(nowBlock[0].classList[0].replace("col",""));
+                let startY = parseInt(nowBlock[0].classList[1].replace("row",""));
+                let shape = blockShape(nowBlock);
+                deleteBlock(nowBlock);
+                nowBlock = drawBlock(startX, startY + 1, shape);
+                return dropBlock(nowBlock);
+            } else {
+                fixBlock(nowBlock);
+                deleteRow(nowBlock);
+                return createBlock();
+            }
+        }
+        // 행 삭제 및 블록 아래로 이동
+        function deleteRow(nowBlock) {
+            nowBlock.forEach(block => {
+                let row = parseInt(block.classList[1].replace("row", ""));
+                // 각 행마다 fixed-block의 개수를 세어 10개인 행을 찾음
+                let fixedBlocksInRow = document.querySelectorAll('.row' + row + '.fixed-block');
+                // 행의 fixed-block의 개수가 cols와 같으면 줄 삭제
+                if (fixedBlocksInRow.length === cols) {
+                    console.log();
+                    fixedBlocksInRow.forEach(cell => {
+                        cell.classList.remove("fixed-block");
+                        cell.style.backgroundColor = "";
+                        plusScore();
+                    });
+                    // 삭제된 행 위의 블럭들을 아래로 내리기
+                    for (let i = row - 1; i > 0; i--) {
+                        let selectRow = document.querySelectorAll('.row' + i);
+                        selectRow.forEach(div => {
+                            let nowCol = parseInt(div.classList[0].replace("col", ""));
+                            let nowRow = parseInt(div.classList[1].replace("row", ""));
+                            let nextCell = document.querySelector('.col' + nowCol + '.row' + (nowRow + 1));
+                            if (div.classList.contains("fixed-block")) {
+                                nextCell.classList.add("fixed-block");
+                                nextCell.style.backgroundColor = div.style.backgroundColor;
+                                div.classList.remove("fixed-block");
+                                div.style.backgroundColor = "";
+                            }
+                        });
+                    }
+                };
+            });
+        }
+        // 점수 증가
+        function plusScore(){
+            ++score;
+            scoreBoard.innerHTML = score;
+            level = score/100;
+            levelBoard.innerHTML = level;
+            time -= level * 10;
+        }
     </script>
 </body>
+
 </html>
