@@ -55,7 +55,7 @@
         const cols = 10;
         const blockSize = 20;
         const playBoard = document.getElementById("playBoard");
-
+        let color = "";
         // 보드판 만들기
         for (let i = 0; i < 20; i++) {
             let r = document.createElement("div");
@@ -63,8 +63,8 @@
             r.classList.add('rows' + i);
             for (let j = 0; j < 10; j++) {
                 let c = document.createElement("div");
-                c.classList.add('row' + i);
                 c.classList.add('col' + j);
+                c.classList.add('row' + i);
                 c.style.width = blockSize + 'px';
                 c.style.height = blockSize + 'px';
                 r.append(c);
@@ -90,126 +90,173 @@
             const colors = ["red", "orange", "yellow", "green", "blue", "navy", "purple"]
             const random = Math.floor(Math.random() * shapes.length);
             const shape = shapes[random];
-            const color = colors[random];
-
-            currentBlock = {
-                shape: shape,
-                color: color,
-                x: 4,
-                y: 0
-            };
-            drawBlock();
+            color = colors[random];
+            drawBlock(3, 0, shape);
         };
         // 블록그리기
-        function drawBlock() {
-            const currentShape = currentBlock.shape;
-            const currentColor = currentBlock.color;
-            const startX = currentBlock.x;
-            const startY = currentBlock.y;
-
-            for (let x = 0; x < currentShape.length; x++) {
-                for (let y = 0; y < currentShape[x].length; y++) {
-                    if (currentShape[x][y] == 1) {
-                        const cell = document.querySelector('.row' + (startY + y) + '.col' + (startX + x));
-                        cell.classList.add("block");
-                        cell.style.backgroundColor = currentColor;
+        function drawBlock(startX, startY, shape) {
+            let block = [];
+            if(shape[0][0] == 0){
+                if(shape[0][1] == 0){
+                    startX--;
+                } 
+                startX--;
+            }
+            for (let y = 0; y < shape.length; y++) {
+                for (let x = 0; x < shape[y].length; x++) {
+                    if (shape[y][x] == 1) {
+                        const cell = document.querySelector('.col' + (startX + x) + '.row' + (startY + y));
+                        if(cell){
+                            cell.classList.add("block");
+                            if(cell.style.backgroundColor == ""){
+                                cell.style.backgroundColor = color;
+                            }
+                            block.push(cell);
+                        } else {
+                            return false;
+                        }
                     }
                 }
             }
+            return block;
         }
         // 시간이 지나면 블록내리기
         function downBlock() {
             let nowBlock = document.querySelectorAll(".block");
-            const currentColor = currentBlock.color;
+            let currentShape = [];
+            let startX = parseInt(nowBlock[0].classList[0].replace("col", ""));
+            let startY = parseInt(nowBlock[0].classList[1].replace("row", ""));
+            let shape = blockShape(nowBlock);
             if (collisionBlock(nowBlock, 0)) {
+                fixBlock(nowBlock);
                 return createBlock();
             } else {
-                // 기존 블록 지우기
-                nowBlock.forEach(block => {
-                    block.classList.remove("block");
-                    block.style.backgroundColor = "";
-                });
-                // 블록 새로 그리기
-                nowBlock.forEach(block => {
-                    let row = parseInt(block.classList[0].replace("row", ""));
-                    let col = parseInt(block.classList[1].replace("col", ""));
-                    let nextBlock = document.querySelector(".row" + (row + 1) + ".col" + col);
-                    nextBlock.classList.add("block");
-                    nextBlock.style.backgroundColor = currentColor;
-                });
+                deleteBlock(nowBlock);
+                drawBlock(startX, startY+1, shape);
             }
+        }
+        // 블록을 배열로 변환
+        function blockShape(nowBlock) {
+            let minRow = 20;
+            let maxRow = 0;
+            let minCol = 10;
+            let maxCol = 0;
+            nowBlock.forEach(block => {
+                let col = parseInt(block.classList[0].replace("col", ""));
+                let row = parseInt(block.classList[1].replace("row", ""));
+                if (col < minCol) minCol = col;
+                if (col > maxCol) maxCol = col;
+                if (row < minRow) minRow = row;
+                if (row > maxRow) maxRow = row;
+            });
+            // 모양을 담을 2차원 배열 생성
+            let currentShape = Array.from({ length: maxRow - minRow + 1 }, () => Array.from({ length: maxCol - minCol + 1 }, () => 0));
+            // NodeList에서 각 요소의 위치에 1로 설정
+            nowBlock.forEach(shape => {
+                const col = parseInt(shape.classList[0].replace("col", "")) - minCol;
+                const row = parseInt(shape.classList[1].replace("row", "")) - minRow;
+                currentShape[row][col] = 1;
+            });
+            return currentShape;
+        }
+        // 기존 블록 지우기
+        function deleteBlock(nowBlock){
+            nowBlock.forEach(block => {
+                block.classList.remove("block");
+                if(!block.classList.contains("fixed-block"))
+                block.style.backgroundColor = "";
+            });
         }
         // 좌, 우, 밑으로 움직이기
         window.addEventListener("keydown", (e) => {
-            const nowBlock = document.querySelectorAll(".block");
-            const currentColor = currentBlock.color;
-
-            let direction = { ArrowLeft: -1, ArrowRight: 1, ArrowDown: 0 }[e.key];
-            if (direction !== undefined) {
-                if(collisionBlock(nowBlock, direction)){
-                    if(direction == 0){
+            let nowBlock = document.querySelectorAll(".block");
+            let shape = blockShape(nowBlock);
+            let direction = { ArrowLeft: -1, ArrowRight: 1, ArrowDown: 0, ArrowUp: "ArrowUp" }[e.key];
+            if (direction !== undefined && direction !== "ArrowUp") {
+                if (collisionBlock(nowBlock, direction)) {
+                    if (direction == 0) {
+                        fixBlock(nowBlock);
                         return createBlock();
                     }
+                    return;
                 } else {
-                    // 기존 블록 지우기
-                    nowBlock.forEach(block => {
-                        block.classList.remove("block");
-                        block.style.backgroundColor = "";
-                    });
+                    deleteBlock(nowBlock);
                     // 방향에 따라 블록 새로 그리기
-                    nowBlock.forEach(block => {
-                        let row = parseInt(block.classList[0].replace("row", ""));
-                        let col = parseInt(block.classList[1].replace("col", ""));
-                        let nextBlock = null;
-                        if (direction == 0) {
-                            nextBlock = document.querySelector(".row" + (row + 1) + ".col" + col);
-                        } else {
-                            nextBlock = document.querySelector(".row" + row + ".col" + (col + direction));
-                        }
-                        nextBlock.classList.add("block");
-                        nextBlock.style.backgroundColor = currentColor;
-                    });
+                    let startX = parseInt(nowBlock[0].classList[0].replace("col", ""));
+                    let startY = parseInt(nowBlock[0].classList[1].replace("row", ""));
+                    if (direction == 0) {
+                        drawBlock(startX, startY + 1, shape);
+                    } else {
+                        drawBlock(startX + direction, startY, shape);
+                    }
                 }
+            } else if (direction === "ArrowUp") {
+                rotateBlock(nowBlock);
             }
         });
+        // 충돌 감지
         function collisionBlock(nowBlock, direction) {
-            const nextBlock = []; // 다음 위치에 있는 블록들의 위치 정보를 저장할 배열
-
+            const nextBlock = [];
             // 다음 위치에 있는 블록들의 위치 정보를 수집
             nowBlock.forEach(block => {
-                let row = parseInt(block.classList[0].replace("row", ""));
-                let col = parseInt(block.classList[1].replace("col", ""));
+                let col = parseInt(block.classList[0].replace("col", ""));
+                let row = parseInt(block.classList[1].replace("row", ""));
                 if (direction == 0) {
-                    nextBlock.push({ row: row + 1, col: col });
+                    nextBlock.push({ col: col, row: row + 1 });
+                } else if(direction == 2) {
+                    nextBlock.push({ col: col, row: row });
                 } else {
-                    nextBlock.push({ row: row, col: col + direction });
+                    nextBlock.push({ col: col + direction, row: row });
                 }
             });
-
             // 다음 위치에 다른 블록이 있는지 확인하고 충돌 감지
             const collision = nextBlock.some(pos => {
                 // 다른 고정된 블록이나 바닥에 닿았을 경우
-                if (pos.row > 19 || pos.col < 0 || pos.col > 9 || document.querySelector(".row" + pos.row + ".col" + pos.col + ".fixed-block") !== null) {
+                if (pos.row > 19 || pos.col < 0 || pos.col > 9 || document.querySelector(".col" + pos.col + ".row" + pos.row + ".fixed-block") !== null) {
                     return true; // 충돌 감지
                 }
                 return false;
             });
-
-            // 충돌이 감지되면 현재 블록을 고정시키고 새로운 블록 생성
-            if (collision) {
-                if(direction == 0){
-                    nowBlock.forEach(block => {
-                        block.classList.remove("block"); // 블록 클래스 제거
-                        block.classList.add("fixed-block"); // 고정된 블록 클래스 추가
-                    });
-                    return true;
-                } else {
-                    return true;
+            return collision;
+        }
+        // 충돌이 감지되면 현재 블록을 고정시키고 새로운 블록 생성
+        function fixBlock(nowBlock) {
+            nowBlock.forEach(block => {
+                block.classList.remove("block");
+                block.classList.add("fixed-block");
+            })
+        };
+        function rotateBlock(nowBlock) {
+            let startX = parseInt(nowBlock[0].classList[0].replace("col", ""));
+            let startY = parseInt(nowBlock[0].classList[1].replace("row", ""));
+            let shape = blockShape(nowBlock);
+            const rotatedShape = [];
+            // 회전된 블록 모양 계산
+            const rows = shape.length;
+            const cols = shape[0].length;
+            for (let col = 0; col < cols; col++) {
+                let newRow = [];
+                for (let row = rows - 1; row >= 0; row--) {
+                    newRow.push(shape[row][col]);
                 }
+                rotatedShape.push(newRow);
             }
-            return false; // 충돌이 감지되지 않음
+            // 회전된 블록 그리기 전에 이전 블록 지우기
+            deleteBlock(nowBlock);
+            // 회전된 블록 그리기
+            let nextBlock = drawBlock(startX, startY, rotatedShape);
+            if(nextBlock == false){
+                deleteBlock(document.querySelectorAll(".block"));
+                if(startX < 5){
+                    return rotateBlock(drawBlock(startX + 1, startY, shape));
+                } else {
+                    return rotateBlock(drawBlock(startX - 1, startY, shape));
+                }
+            } else if(collisionBlock(nextBlock, 2)){
+                deleteBlock(document.querySelectorAll(".block"));
+                return drawBlock(startX, startY, shape);
+            }
         }
     </script>
 </body>
-
 </html>
