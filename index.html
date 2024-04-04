@@ -60,7 +60,7 @@
         let score = 0;
         let level = 1;
         let time = 2000;
-        let intervalId = setInterval(downBlock, time);
+        let intervalId = null;
         let color = "";
         // 보드판 만들기
         for (let i = 0; i < 20; i++) {
@@ -85,10 +85,18 @@
             time = 2000;
             scoreBoard.innerHTML = score;
             levelBoard.innerHTML = level;
-            // 현재 블록 삭제
-            deleteBlock(document.querySelectorAll(".block"));
-            // 고정된 블록 삭제
-            deleteBlock(document.querySelectorAll(".fixed-block"));
+            //  모든 블록 삭제
+            let allBlock = document.querySelectorAll(".block");
+            allBlock.forEach(block => {
+                block.classList.remove("block");
+                block.style.backgroundColor = "";
+            })
+            let allFixBlock = document.querySelectorAll(".fixed-block");
+            allFixBlock.forEach(block => {
+                block.classList.remove("fixed-block");
+                block.style.backgroundColor = "";
+            })
+            // 시간 초기화
             clearInterval(intervalId);
             // 새로운 블록 생성
             createBlock();
