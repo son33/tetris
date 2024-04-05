@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="ko">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,21 +10,21 @@
             margin: 0;
             text-align: center;
         }
-
         .wrapper {
+            display: flex;
+            flex-direction: column;
+        }
+        .a{
             display: flex;
             justify-content: center;
         }
-
         .play-board {
             margin-top: 100px;
             border: 3px solid black;
         }
-
         .play-board>div>div {
             border: 1px solid white;
         }
-
         .board {
             margin-top: 100px;
             margin-left: 50px;
@@ -33,21 +32,66 @@
             height: 400px;
             text-align: left;
         }
-
         .rows {
             display: flex;
         }
+        .key-board-wrapper{
+            padding-top: 100px;
+            display: flex;
+            justify-content: center;
+        }
+        .key-board{
+            display: flex;
+            justify-content: center;
+        }
+        .key{
+            width: 100px;
+            height: 100px;
+            background-color: gray;
+            border: 3px solid black;
+            display: flex;
+            text-align: center;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        .longkey{
+            width: 300px;
+            height: 50px;
+            background-color: gray;
+            border: 3px solid black;
+            cursor: pointer;
+        }
     </style>
 </head>
-
 <body>
     <div class="wrapper">
-        <div class="play-board" id="playBoard"></div>
-        <div class="board">
-            <p>테 트 리 스</p>
-            <button id="start" onclick="play()">게임시작</button>
-            <p>LEVEL : <span id="level">0</span></p>
-            <p>SCORE : <span id="score">0</span></p>
+        <div class="a">
+            <div class="play-board" id="playBoard"></div>
+            <div class="board">
+                <p>테 트 리 스</p>
+                <button id="start" onclick="play()">게임시작</button>
+                <p>LEVEL : <span id="level">0</span></p>
+                <p>SCORE : <span id="score">0</span></p>
+                <p>키 : 위, 아래, 왼쪽, 오른쪽, 스페이스바</p>
+            </div>
+        </div>
+        <div class="key-board-wrapper">
+            <div>
+                <div class="key-board">
+                    <div class="box"></div>
+                    <div class="box key" id="up" onclick="moveBlock('ArrowUp')">위</div>
+                    <div class="box"></div>
+                </div>
+                <div class="key-board">
+                    <div class="box key" id="left" onclick="moveBlock(-1)">왼쪽</div>
+                    <div class="box key" id="down" onclick="moveBlock(0)">아래</div>
+                    <div class="box key" id="right" onclick="moveBlock(1)">오른쪽</div>
+                </div>
+            </div>
+            <div class="key-board" style="padding-top: 50px;">
+                <div class="longkey" id="space" onclick="moveBlock('space')">스페이스바</div>
+            </div>
         </div>
     </div>
     <script>
@@ -118,7 +162,12 @@
             const random = Math.floor(Math.random() * shapes.length);
             const shape = shapes[random];
             color = colors[random];
-            drawBlock(3, 0, shape);
+            if(collisionBlock(drawBlock(3, 0, shape))){
+                console.log("충돌여부")
+                clearInterval(intervalId);
+                alert("게임 종료");
+                return;
+            }
         };
         // 블록그리기
         function drawBlock(startX, startY, shape) {
@@ -197,10 +246,16 @@
         }
         // 좌, 우, 밑 그리고 스페이스바 누르기
         window.addEventListener("keydown", (e) => {
+            if(e.key == "ArrowLeft") moveBlock(-1);
+            if(e.key == "ArrowRight") moveBlock(1);
+            if(e.key == "ArrowDown") moveBlock(0);
+            if(e.key == "ArrowUp") moveBlock("ArrowUp");
+            if(e.keyCode == "32") moveBlock("space");
+        });
+        function moveBlock(direction){
             let nowBlock = document.querySelectorAll(".block");
             let shape = blockShape(nowBlock);
-            let direction = { ArrowLeft: -1, ArrowRight: 1, ArrowDown: 0, ArrowUp: "ArrowUp" }[e.key];
-            if (direction !== undefined && direction !== "ArrowUp") {
+            if (direction !== "ArrowUp" && direction !== "space") {
                 if (collisionBlock(nowBlock, direction)) {
                     if (direction == 0) {
                         fixBlock(nowBlock);
@@ -221,10 +276,10 @@
                 }
             } else if (direction === "ArrowUp") {
                 rotateBlock(nowBlock);
-            } else if(e.keyCode == 32){
+            } else {
                 dropBlock(nowBlock);
             }
-        });
+        }
         // 충돌 감지
         function collisionBlock(nowBlock, direction) {
             const nextBlock = [];
@@ -343,8 +398,9 @@
             level = score/100;
             levelBoard.innerHTML = level;
             time -= level * 10;
+            clearInterval(intervalId);
+            intervalId = setInterval(downBlock, time);
         }
     </script>
 </body>
-
 </html>
