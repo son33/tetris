@@ -360,7 +360,6 @@
                 let fixedBlocksInRow = document.querySelectorAll('.row' + row + '.fixed-block');
                 // 행의 fixed-block의 개수가 cols와 같으면 줄 삭제
                 if (fixedBlocksInRow.length === cols) {
-                    console.log();
                     fixedBlocksInRow.forEach(cell => {
                         cell.classList.remove("fixed-block");
                         cell.style.backgroundColor = "";
@@ -386,11 +385,11 @@
         }
         // 점수 증가
         function plusScore(){
-            ++score;
+            score++;
             scoreBoard.innerHTML = score;
-            level = score/100;
+            level = 1 + score/100;
             levelBoard.innerHTML = level;
-            time -= level * 10;
+            time = 2000 - level * 10;
             clearInterval(intervalId);
             intervalId = setInterval(downBlock, time);
         }
